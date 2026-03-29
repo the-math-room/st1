@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Dash: Classroom Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="card">
+            <h2>Classroom Login</h2>
+            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 1rem;">Enter your first name and last initial</p>
+            <input type="text" id="username-input" placeholder="Username (e.g. johnd)">
+            <input type="password" id="password-input" placeholder="Password">
+            <button id="login-btn">Login</button>
+        </div>
+    </div>
+
+    <main id="app" style="display: none;">
+        <header id="dashboard">
+            <div id="user-info">
+                <span id="student-name">Loading...</span>
+                <button id="logout-btn">Switch User</button>
+            </div>
+
+            <p id="instruction-text" style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">Select at least 2 categories to start:</p>
+            <div id="mastery-grid"></div>
+            
+            <div id="controls" style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                <button id="start-drill-btn" disabled style="width: auto; padding: 10px 30px;">Start Drill</button>
+                <button id="stop-drill-btn" style="display: none; width: auto; background: #f1f5f9; color: #475569; border: 2px solid #e2e8f0;">Change Categories</button>
+            </div>
+        </header>
+
+        <hr>
+
+        <section id="question-container" style="display: none;">
+            <span id="category-tag">--</span>
+            <h2 id="question">--</h2>
+            <div class="input-group">
+                <input type="number" id="answer-input" placeholder="?" autocomplete="off">
+                <button id="submit-btn">Submit</button>
+            </div>
+        </section>
+        
+        <footer id="status-footer" style="display: none; margin-top: 20px;">
+            <p id="status-msg">Ready!</p>
+        </footer>
+    </main>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
