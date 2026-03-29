@@ -6,7 +6,7 @@ CREATE TABLE math_tasks (
   category TEXT NOT NULL
 );
 
--- 2. NEW: Students Table (FERPA-friendly)
+-- 2. NEW: Students Table
 CREATE TABLE students (
   id SERIAL PRIMARY KEY,
   username TEXT UNIQUE NOT NULL, -- e.g., 'johnd'
@@ -204,3 +204,42 @@ BEGIN
     RETURN QUERY SELECT v_is_right, v_new_score;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==========================
+
+ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE math_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE math_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE student_mastery ENABLE ROW LEVEL SECURITY;
+
+-- 2. Math Tasks: Anyone can read these to get questions
+CREATE POLICY "Public read questions" ON math_tasks 
+FOR SELECT TO anon USING (true);
+
+-- ===========================
+
+-- Only allow a student to see their own mastery scores
+-- Note: This assumes your app sends the student_id in the query
+CREATE POLICY "Students see own mastery" ON student_mastery
+FOR SELECT TO anon
+USING (student_id::text = current_setting('app.current_student_id', true));
+
+-- Only allow a student to see their own history
+CREATE POLICY "Students see own attempts" ON math_attempts
+FOR SELECT TO anon
+USING (student_id::text = current_setting('app.current_student_id', true));
+
+-- =============================
+
+CREATE OR REPLACE FUNCTION secure_login(input_username TEXT, input_password TEXT)
+RETURNS TABLE (id INT, display_name TEXT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT s.id, s.display_name 
+    FROM students s
+    WHERE s.username = input_username 
+      AND s.password = input_password; -- In production, use crypt() here!
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER; 
+-- ^ SECURITY DEFINER means this function runs with "Admin" 
+--   privileges even though the table is locked to the user.

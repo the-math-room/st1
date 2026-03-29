@@ -66,5 +66,18 @@ export const api = {
 
         const randomIndex = Math.floor(Math.random() * questions.length);
         return questions[randomIndex];
+    },
+
+    async login(username, password) { 
+        const { data, error } = await supabase.rpc('secure_login', {
+            input_username: username,
+            input_password: password
+        });
+
+        if (error || !data.length) throw new Error("Invalid login");
+        
+        // Success! Return the first (and only) match
+        return data[0]; 
     }
 };
+
