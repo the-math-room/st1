@@ -243,3 +243,33 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER; 
 -- ^ SECURITY DEFINER means this function runs with "Admin" 
 --   privileges even though the table is locked to the user.
+
+-- =============================
+
+-- 1. Enable the encryption extension
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 2. Update the Login function to use Hashing
+CREATE OR REPLACE FUNCTION secure_login(input_username TEXT, input_password TEXT)
+RETURNS TABLE (id INT, display_name TEXT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT s.id, s.display_name 
+    FROM students s
+    WHERE s.username = input_username 
+      -- This compares the input to the hashed version in the DB
+      AND s.password = crypt(input_password, s.password); 
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. Create a function for students to set/update their password
+CREATE OR REPLACE FUNCTION set_student_password(input_username TEXT, new_password TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+    UPDATE students
+    SET password = crypt(new_password, gen_salt('bf')) -- 'bf' is Blowfish (bcrypt)
+    WHERE username = input_username;
+    
+    RETURN FOUND;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

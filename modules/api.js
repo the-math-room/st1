@@ -1,21 +1,13 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 import { SUPABASE_CONFIG } from '../config.js';
 
-// DEBUG CHECK: If this prints "undefined", your config.js path is wrong
-console.log("API Module Loading. Config detected:", SUPABASE_CONFIG);
-
 if (!SUPABASE_CONFIG || !SUPABASE_CONFIG.URL || !SUPABASE_CONFIG.KEY) {
-    console.error("CRITICAL ERROR: Supabase Config is missing or undefined!");
-    // This stops the app from making the bad /undefined fetch
     throw new Error("App halted: Missing API credentials.");
 }
 
 const supabase = createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.KEY);
 
 export const api = {
-    // ... rest of your code ...
-    
-    // Ensure this has the new parameter for the help feature
     async checkAnswer(id, guess, studentId, usedHelp = false) {
         const { data, error } = await supabase.rpc('check_math_answer', {
             question_id: id, 
@@ -23,10 +15,7 @@ export const api = {
             input_student_id: studentId,
             input_used_help: usedHelp 
         });
-        if (error) {
-            console.error("RPC Error:", error);
-            throw error;
-        }
+        if (error) throw error;
         return data[0];
     },
 
@@ -56,16 +45,13 @@ export const api = {
 
     async getRandomQuestion(selectedCategories = []) {
         if (!selectedCategories.length) return null;
-
         const { data: questions, error } = await supabase
             .from('math_tasks')
             .select('*')
             .in('category', selectedCategories);
 
         if (error || !questions?.length) return null;
-
-        const randomIndex = Math.floor(Math.random() * questions.length);
-        return questions[randomIndex];
+        return questions[Math.floor(Math.random() * questions.length)];
     },
 
     async login(username, password) { 
@@ -73,11 +59,16 @@ export const api = {
             input_username: username,
             input_password: password
         });
-
-        if (error || !data.length) throw new Error("Invalid login");
-        
-        // Success! Return the first (and only) match
+        if (error || !data.length) throw new Error("Invalid credentials.");
         return data[0]; 
+    },
+
+    async setPassword(username, password) {
+        const { data, error } = await supabase.rpc('set_student_password', {
+            input_username: username,
+            new_password: password
+        });
+        if (error) throw error;
+        return data;
     }
 };
-

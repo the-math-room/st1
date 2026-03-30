@@ -16,7 +16,11 @@ export const medianRenderer = {
     },
 
     getHelp() {
-        return `<h4>Finding the Median</h4><p>1. Sort numbers...</p>`;
+        return `<h4>Finding the Median</h4>
+                    <p>1. Sort the numbers</p>
+                    <p>2. Choose the middle number. (If there are 5 numbers, choose the third. If there are 6 numbers, choose the third and fourth</p>
+                    <p>3. If you have two "middle numbers", add them together and divide by 2</p>
+        `;
     },
 
     // This is the new "specialized logic" bucket
