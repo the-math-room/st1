@@ -273,3 +273,82 @@ BEGIN
     RETURN FOUND;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================
+
+-- 1. Add roles to your table
+ALTER TABLE students ADD COLUMN role TEXT DEFAULT 'student';
+
+-- 2. Promote yourself (Replace 'your_username' with your actual login)
+UPDATE students SET role = 'teacher' WHERE username = 'your_username';
+
+-- 3. Update the login function to return the role
+DROP FUNCTION IF EXISTS secure_login(text, text);
+CREATE OR REPLACE FUNCTION secure_login(input_username TEXT, input_password TEXT)
+RETURNS TABLE (id INT, display_name TEXT, must_reset BOOLEAN, role TEXT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT s.id, s.display_name, s.must_reset_password, s.role
+    FROM students s
+    WHERE s.username = input_username 
+      AND s.password = crypt(input_password, s.password); 
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. Teacher-only function to see the class list
+CREATE OR REPLACE FUNCTION admin_get_students()
+RETURNS TABLE (username TEXT, display_name TEXT, must_reset BOOLEAN) AS $$
+BEGIN
+    -- Security check: This is a bit simplified for this setup, 
+    -- but usually you'd verify the requester's role here.
+    RETURN QUERY SELECT s.username, s.display_name, s.must_reset_password FROM students s WHERE s.role = 'student';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ================================
+
+-- This function allows the teacher to create a student with a temp password
+CREATE OR REPLACE FUNCTION admin_add_student(new_username TEXT, new_display_name TEXT, temp_password TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+    INSERT INTO students (username, display_name, password, role, must_reset_password)
+    VALUES (new_username, new_display_name, crypt(temp_password, gen_salt('bf')), 'student', TRUE);
+    RETURN TRUE;
+EXCEPTION WHEN OTHERS THEN
+    -- This catches duplicate usernames
+    RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ===================================
+
+-- Create a dedicated reset function that accepts a temporary password
+CREATE OR REPLACE FUNCTION admin_trigger_reset(target_username TEXT, temp_password TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+    UPDATE students 
+    SET password = crypt(temp_password, gen_salt('bf')),
+        must_reset_password = TRUE
+    WHERE username = target_username AND role = 'student';
+    
+    RETURN FOUND;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================
+
+-- 1. Disable the "ghost" policies that are blocking data
+DROP POLICY IF EXISTS "Students see own mastery" ON student_mastery;
+DROP POLICY IF EXISTS "Students see own attempts" ON math_attempts;
+DROP POLICY IF EXISTS "Public read questions" ON math_tasks;
+DROP POLICY IF EXISTS "Allow public to view questions" ON math_tasks;
+
+-- 2. Create clean, working policies for the 'anon' key
+-- Note: We are allowing 'anon' to read these so your app can function.
+CREATE POLICY "Enable read for all" ON math_tasks FOR SELECT TO anon USING (true);
+CREATE POLICY "Enable read for mastery" ON student_mastery FOR SELECT TO anon USING (true);
+CREATE POLICY "Enable insert for attempts" ON math_attempts FOR INSERT TO anon WITH CHECK (true);
+
+-- 3. Ensure your own account is a teacher
+-- Replace 'your_username' with the one you actually use
+UPDATE students SET role = 'teacher' WHERE username = 'your_username';

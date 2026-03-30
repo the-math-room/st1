@@ -1,10 +1,6 @@
 import { defaultRenderer } from './renderers/default.js';
 import { medianRenderer } from './renderers/median.js';
 
-/**
- * Strategy Registry
- * Add new question types here to expand the app's capabilities.
- */
 const QuestionRenderers = {
     median: medianRenderer,
     addition: defaultRenderer,
@@ -12,56 +8,43 @@ const QuestionRenderers = {
     default: defaultRenderer 
 };
 
+// Helper to grab elements safely
+const getEl = (id) => document.getElementById(id);
+
 export const ui = {
-    // Tracks which specialized module is currently "on stage"
     activeRenderer: null,
 
-    elements: {
-        loginScreen: document.getElementById('login-screen'),
-        loginForm: document.getElementById('login-form'),
-        answerForm: document.getElementById('answer-form'),
-        mainApp: document.getElementById('app'),
-        studentName: document.getElementById('student-name'),
-        usernameInput: document.getElementById('username-input'),
-        passwordInput: document.getElementById('password-input'),
-        loginBtn: document.getElementById('login-btn'),
-        logoutBtn: document.getElementById('logout-btn'),
-        question: document.getElementById('question'),
-        category: document.getElementById('category-tag'),
-        input: document.getElementById('answer-input'),
-        button: document.getElementById('submit-btn'),
-        status: document.getElementById('status-msg'),
-        masteryGrid: document.getElementById('mastery-grid'),
-        startBtn: document.getElementById('start-drill-btn'),
-        stopBtn: document.getElementById('stop-drill-btn'),
-        questionContainer: document.getElementById('question-container'),
-        statusFooter: document.getElementById('status-footer'),
-        instructionText: document.getElementById('instruction-text')
-    },
-
-    /**
-     * AUTH & NAVIGATION
-     */
+    // Core UI logic
     toggleAuth(isLoggedIn, student = null) {
-        this.elements.loginScreen.style.display = isLoggedIn ? 'none' : 'flex';
-        this.elements.mainApp.style.display = isLoggedIn ? 'block' : 'none';
-        if (student) this.elements.studentName.innerText = student.display_name;
+        const loginScreen = getEl('login-screen');
+        const mainApp = getEl('app');
+        const studentName = getEl('student-name');
+
+        if (loginScreen) loginScreen.style.display = isLoggedIn ? 'none' : 'flex';
+        if (mainApp) mainApp.style.display = isLoggedIn ? 'block' : 'none';
+        if (student && studentName) studentName.innerText = student.display_name;
     },
 
     setMode(mode) {
         const isDrill = mode === 'drill';
-        this.elements.questionContainer.style.display = isDrill ? 'block' : 'none';
-        this.elements.statusFooter.style.display = isDrill ? 'block' : 'none';
-        this.elements.startBtn.style.display = isDrill ? 'none' : 'inline-block';
-        this.elements.stopBtn.style.display = isDrill ? 'inline-block' : 'none';
-        this.elements.instructionText.style.visibility = isDrill ? 'hidden' : 'visible';
+        const qContainer = getEl('question-container');
+        const footer = getEl('status-footer');
+        const startBtn = getEl('start-drill-btn');
+        const stopBtn = getEl('stop-drill-btn');
+        const instr = getEl('instruction-text');
+
+        if (qContainer) qContainer.style.display = isDrill ? 'block' : 'none';
+        if (footer) footer.style.display = isDrill ? 'block' : 'none';
+        if (startBtn) startBtn.style.display = isDrill ? 'none' : 'inline-block';
+        if (stopBtn) stopBtn.style.display = isDrill ? 'inline-block' : 'none';
+        if (instr) instr.style.visibility = isDrill ? 'hidden' : 'visible';
     },
 
-    /**
-     * DASHBOARD RENDERING
-     */
     renderMasteryCards(curriculum, activeCategory, selectedCategories = []) {
-        this.elements.masteryGrid.innerHTML = curriculum.map(item => {
+        const grid = getEl('mastery-grid');
+        if (!grid) return;
+
+        grid.innerHTML = curriculum.map(item => {
             const pct = Math.round(item.mastery_score * 100);
             const activeClass = item.category === activeCategory ? 'is-active' : '';
             const selectedClass = selectedCategories.includes(item.category) ? 'is-selected' : '';
@@ -74,28 +57,22 @@ export const ui = {
         }).join('');
     },
 
-    /**
-     * QUESTION SYSTEM (The Strategy Bridge)
-     */
     renderQuestion(questionObj) {
-        // 1. Assign the renderer based on category
         this.activeRenderer = QuestionRenderers[questionObj.category] || QuestionRenderers.default;
-
-        // 2. Get the HTML from the renderer
         const problemHtml = this.activeRenderer.render(questionObj);
-
-        // 3. Inject standard wrappers around the custom problem HTML
-        this.elements.question.innerHTML = `
-            ${problemHtml}
-            <button id="help-btn" class="secondary-btn" style="margin-top: 10px;">How do I do this?</button>
-            <div id="help-display" style="display: none;" class="help-box"></div>
-        `;
+        const qBox = getEl('question');
+        if (qBox) {
+            qBox.innerHTML = `
+                ${problemHtml}
+                <button id="help-btn" class="secondary-btn" style="margin-top: 10px;">How do I do this?</button>
+                <div id="help-display" style="display: none;" class="help-box"></div>
+            `;
+        }
     },
 
     showHelpContent(category) {
-        const display = document.getElementById('help-display');
-        const btn = document.getElementById('help-btn');
-
+        const display = getEl('help-display');
+        const btn = getEl('help-btn');
         if (this.activeRenderer && display) {
             display.innerHTML = this.activeRenderer.getHelp(category);
             display.style.display = 'block';
@@ -103,34 +80,40 @@ export const ui = {
         }
     },
 
-    /**
-     * CUSTOM ACTION DISPATCHER
-     * Forwards events (like "sort" or "draw") to the active renderer
-     */
     handleCustomAction(actionType) {
         if (this.activeRenderer && typeof this.activeRenderer.handleAction === 'function') {
             this.activeRenderer.handleAction(actionType);
         }
     },
 
-    /**
-     * FEEDBACK & UTILITIES
-     */
     setLoading(isLoading, msg = "") {
-        this.elements.button.disabled = isLoading;
-        this.elements.input.disabled = isLoading;
-        if (msg) this.elements.status.innerText = msg;
-        if (!isLoading) this.elements.input.focus();
+        const btn = getEl('submit-btn');
+        const input = getEl('answer-input');
+        const status = getEl('status-msg');
+
+        if (btn) btn.disabled = isLoading;
+        if (input) input.disabled = isLoading;
+        if (msg && status) status.innerText = msg;
+        if (!isLoading && input) input.focus();
     },
 
     showFeedback(isCorrect) {
-        this.elements.mainApp.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
-        this.elements.status.innerText = isCorrect ? "Correct! 🎉" : "Try again! ❌";
+        const app = getEl('app');
+        const status = getEl('status-msg');
+        if (app) {
+            app.classList.remove('is-correct', 'is-wrong');
+            app.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
+        }
+        if (status) status.innerText = isCorrect ? "Correct! 🎉" : "Try again! ❌";
     },
 
     clearFeedback() {
-        this.elements.mainApp.classList.remove('is-correct', 'is-wrong');
-        this.elements.input.value = '';
-        this.elements.input.focus();
+        const app = getEl('app');
+        const input = getEl('answer-input');
+        if (app) app.classList.remove('is-correct', 'is-wrong');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
     }
 };

@@ -11,55 +11,76 @@
     <div id="login-screen">
         <form id="login-form" class="card">
             <h2>Classroom Login</h2>
-            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 1rem;">Enter your username and password</p>
+            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 1rem;">Enter your student credentials</p>
             <input type="text" id="username-input" name="username" autocomplete="username" placeholder="Username" required>
             <input type="password" id="password-input" name="password" autocomplete="current-password" placeholder="Password" required>
-            <button type="submit" id="login-btn">Login</button>
-            <p style="margin-top: 15px; font-size: 0.75rem;">
-                First time? <a href="#" id="show-setup-link">Set your password here.</a>
-            </p>
+            <button type="submit">Login</button>
         </form>
 
         <form id="setup-form" class="card" style="display: none;">
-            <h2>Set Password</h2>
-            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 1rem;">Choose a password you'll remember.</p>
-            <input type="text" id="setup-username" placeholder="Confirm Username" required>
+            <h2>Update Password</h2>
+            <p style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 1rem;">Teacher has authorized a password change.</p>
+            <input type="text" id="setup-username" placeholder="Username" required readonly>
             <input type="password" id="setup-password" placeholder="New Password" required>
-            <button type="submit" style="background: var(--secondary, #3b82f6);">Save Password</button>
-            <p style="margin-top: 15px; font-size: 0.75rem;">
-                <a href="#" id="show-login-link">Back to Login</a>
-            </p>
+            <button type="submit">Save & Continue</button>
         </form>
     </div>
 
     <main id="app" style="display: none;">
-        <header id="dashboard">
-            <div id="user-info">
-                <span id="student-name">Loading...</span>
-                <button id="logout-btn" class="secondary-btn">Switch User</button>
+        <section id="teacher-panel" style="display: none;">
+            <header>
+                <h2>Teacher Dashboard</h2>
+                <button id="teacher-logout" class="secondary-btn">Logout</button>
+            </header>
+            
+            <div id="add-student-container" class="card" style="margin: 1rem 0; border: 2px dashed #e2e8f0; text-align: left;">
+                <h4 class="label">Register New Student</h4>
+                <form id="add-student-form" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+                    <input type="text" id="new-student-name" placeholder="Name (Jane D.)" style="flex: 1;" required>
+                    <input type="text" id="new-student-username" placeholder="Username" style="flex: 1;" required>
+                    <input type="text" id="new-student-pass" placeholder="Temp Pass" style="flex: 1;" required>
+                    <button type="submit">Add</button>
+                </form>
             </div>
-            <p id="instruction-text"></p>
-            <div id="mastery-grid"></div>
-            <div id="controls">
-                <button id="start-drill-btn" disabled>Start Drill</button>
-                <button id="stop-drill-btn" style="display: none;">Change Categories</button>
-            </div>
-        </header>
 
-        <hr>
-
-        <section id="question-container" style="display: none;">
-            <span id="category-tag">--</span>
-            <h2 id="question">--</h2>
-            <form id="answer-form" class="input-group">
-                <input type="number" id="answer-input" name="math-answer" placeholder="?" autocomplete="off" step="any" required>
-                <button type="submit" id="submit-btn">Submit</button>
-            </form>
+            <div id="admin-student-list"></div>
         </section>
-        
-        <footer id="status-footer" style="display: none;">
-            <p id="status-msg">Ready!</p>
-        </footer>
+
+        <section id="student-view">
+            <header id="dashboard">
+                <div id="user-info">
+                    <span id="student-name">Loading...</span>
+                    <button id="logout-btn" class="secondary-btn">Switch User</button>
+                </div>
+                <p id="instruction-text"></p>
+                <div id="mastery-grid"></div>
+                <div id="controls">
+                    <button id="start-drill-btn" disabled>Start Drill</button>
+                    <button id="stop-drill-btn" style="display: none;">Change Categories</button>
+                </div>
+            </header>
+
+            <hr>
+
+            <section id="question-container" style="display: none;">
+                <span id="category-tag">--</span>
+                <h2 id="question">--</h2>
+                <form id="answer-form" class="input-group">
+                    <input 
+                        type="number" 
+                        id="answer-input" 
+                        name="math-result-field" 
+                        placeholder="?" 
+                        autocomplete="off" 
+                        data-lpignore="true" 
+                        data-1p-ignore
+                        step="any" 
+                        required
+                    >
+                    <button type="submit" id="submit-btn">Submit</button>
+                </form>
+            </section>
+        </section>
     </main>
 
     <script type="module" src="script.js"></script>
