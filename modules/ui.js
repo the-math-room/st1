@@ -18,6 +18,8 @@ export const ui = {
 
     elements: {
         loginScreen: document.getElementById('login-screen'),
+        loginForm: document.getElementById('login-form'),
+        answerForm: document.getElementById('answer-form'),
         mainApp: document.getElementById('app'),
         studentName: document.getElementById('student-name'),
         usernameInput: document.getElementById('username-input'),

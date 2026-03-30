@@ -158,17 +158,15 @@ ui.elements.stopBtn.addEventListener('click', () => {
 });
 
 // 4. Authentication
-ui.elements.loginBtn.addEventListener('click', async () => {
-    const user = ui.elements.usernameInput.value;
-    const pass = ui.elements.passwordInput.value;
-    
+ui.elements.loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); // Stop page reload
     try {
-        currentStudent = await api.login(user, pass);
+        currentStudent = await api.login(ui.elements.usernameInput.value, ui.elements.passwordInput.value);
         localStorage.setItem('math_session', JSON.stringify(currentStudent));
         ui.toggleAuth(true, currentStudent);
         refreshUI();
     } catch (e) { 
-        alert("Login failed. Check your name or password."); 
+        alert("Login failed."); 
     }
 });
 
@@ -178,9 +176,10 @@ ui.elements.logoutBtn.addEventListener('click', () => {
 });
 
 // 5. User Input
-ui.elements.button.addEventListener('click', handleAnswer);
-ui.elements.input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleAnswer();
+
+ui.elements.answerForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // Stop page reload
+    handleAnswer();
 });
 
 /**

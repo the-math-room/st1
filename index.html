@@ -9,13 +9,13 @@
 <body>
 
     <div id="login-screen">
-        <div class="card">
+        <form id="login-form" class="card">
             <h2>Classroom Login</h2>
             <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 1rem;">Enter your first name and last initial</p>
-            <input type="text" id="username-input" placeholder="Username (e.g. johnd)">
-            <input type="password" id="password-input" placeholder="Password">
-            <button id="login-btn">Login</button>
-        </div>
+            <input type="text" id="username-input" name="username" autocomplete="username" placeholder="Username (e.g. johnd)" required>
+            <input type="password" id="password-input" name="password" autocomplete="current-password" placeholder="Password" required>
+            <button type="submit" id="login-btn">Login</button>
+        </form>
     </div>
 
     <main id="app" style="display: none;">
@@ -39,10 +39,11 @@
         <section id="question-container" style="display: none;">
             <span id="category-tag">--</span>
             <h2 id="question">--</h2>
-            <div class="input-group">
-                <input type="number" id="answer-input" placeholder="?" autocomplete="one-time-code">
-                <button id="submit-btn">Submit</button>
-            </div>
+            
+            <form id="answer-form" class="input-group">
+                <input type="number" id="answer-input" name="math-answer" placeholder="?" autocomplete="off" step="any" required>
+                <button type="submit" id="submit-btn">Submit</button>
+            </form>
         </section>
         
         <footer id="status-footer" style="display: none; margin-top: 20px;">
