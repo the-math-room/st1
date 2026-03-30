@@ -1,4 +1,21 @@
+import { defaultRenderer } from './renderers/default.js';
+import { medianRenderer } from './renderers/median.js';
+
+/**
+ * Strategy Registry
+ * Add new question types here to expand the app's capabilities.
+ */
+const QuestionRenderers = {
+    median: medianRenderer,
+    addition: defaultRenderer,
+    subtraction: defaultRenderer,
+    default: defaultRenderer 
+};
+
 export const ui = {
+    // Tracks which specialized module is currently "on stage"
+    activeRenderer: null,
+
     elements: {
         loginScreen: document.getElementById('login-screen'),
         mainApp: document.getElementById('app'),
@@ -20,6 +37,9 @@ export const ui = {
         instructionText: document.getElementById('instruction-text')
     },
 
+    /**
+     * AUTH & NAVIGATION
+     */
     toggleAuth(isLoggedIn, student = null) {
         this.elements.loginScreen.style.display = isLoggedIn ? 'none' : 'flex';
         this.elements.mainApp.style.display = isLoggedIn ? 'block' : 'none';
@@ -35,6 +55,9 @@ export const ui = {
         this.elements.instructionText.style.visibility = isDrill ? 'hidden' : 'visible';
     },
 
+    /**
+     * DASHBOARD RENDERING
+     */
     renderMasteryCards(curriculum, activeCategory, selectedCategories = []) {
         this.elements.masteryGrid.innerHTML = curriculum.map(item => {
             const pct = Math.round(item.mastery_score * 100);
@@ -49,56 +72,48 @@ export const ui = {
         }).join('');
     },
 
+    /**
+     * QUESTION SYSTEM (The Strategy Bridge)
+     */
     renderQuestion(questionObj) {
-        const helpBtnHtml = `<button id="help-btn" class="secondary-btn" style="margin-top: 10px;">How do I do this?</button>`;
-        const helpBoxHtml = `<div id="help-display" style="display: none;" class="help-box"></div>`;
+        // 1. Assign the renderer based on category
+        this.activeRenderer = QuestionRenderers[questionObj.category] || QuestionRenderers.default;
 
-        if (questionObj.category === 'median') {
-            const nums = questionObj.question.split(',').map(n => n.trim());
-            this.elements.question.innerHTML = `
-                <div class="median-wrapper">
-                    <p class="table-label">Original Data</p>
-                    <div class="dataset-table" id="original-dataset">
-                        ${nums.map(n => `<div class="dataset-cell">${n}</div>`).join('')}
-                    </div>
-                    <div id="sorted-container" style="display: none;">
-                        <p class="table-label">Sorted Data</p>
-                        <div class="dataset-table" id="sorted-dataset"></div>
-                    </div>
-                    <button id="sort-btn" class="secondary-btn">Sort Numbers</button>
-                    ${helpBtnHtml} ${helpBoxHtml}
-                </div>`;
-        } else {
-            this.elements.question.innerHTML = `<div>${questionObj.question}</div> ${helpBtnHtml} ${helpBoxHtml}`;
-        }
+        // 2. Get the HTML from the renderer
+        const problemHtml = this.activeRenderer.render(questionObj);
+
+        // 3. Inject standard wrappers around the custom problem HTML
+        this.elements.question.innerHTML = `
+            ${problemHtml}
+            <button id="help-btn" class="secondary-btn" style="margin-top: 10px;">How do I do this?</button>
+            <div id="help-display" style="display: none;" class="help-box"></div>
+        `;
     },
 
     showHelpContent(category) {
         const display = document.getElementById('help-display');
         const btn = document.getElementById('help-btn');
-        if (category === 'median') {
-            display.innerHTML = `
-                <h4>Finding the Median</h4>
-                <p><strong>1. Sort</strong> numbers from least to greatest.</p>
-                <p><strong>2. Odd Set:</strong> Pick the exact middle.</p>
-                <p><strong>3. Even Set:</strong> Average the 2 middle numbers.</p>
-            `;
-        } else {
-            display.innerHTML = `<p>Use your mental math strategies for ${category}!</p>`;
+
+        if (this.activeRenderer && display) {
+            display.innerHTML = this.activeRenderer.getHelp(category);
+            display.style.display = 'block';
+            if (btn) btn.style.display = 'none';
         }
-        display.style.display = 'block';
-        if (btn) btn.style.display = 'none';
     },
 
-    showSortedData() {
-        const cells = Array.from(document.querySelectorAll('#original-dataset .dataset-cell'));
-        const sortedValues = cells.map(c => parseFloat(c.innerText)).sort((a,b) => a - b);
-        document.getElementById('sorted-dataset').innerHTML = sortedValues
-            .map(n => `<div class="dataset-cell sorted-cell">${n}</div>`).join('');
-        document.getElementById('sorted-container').style.display = 'block';
-        document.getElementById('sort-btn').style.display = 'none';
+    /**
+     * CUSTOM ACTION DISPATCHER
+     * Forwards events (like "sort" or "draw") to the active renderer
+     */
+    handleCustomAction(actionType) {
+        if (this.activeRenderer && typeof this.activeRenderer.handleAction === 'function') {
+            this.activeRenderer.handleAction(actionType);
+        }
     },
 
+    /**
+     * FEEDBACK & UTILITIES
+     */
     setLoading(isLoading, msg = "") {
         this.elements.button.disabled = isLoading;
         this.elements.input.disabled = isLoading;
