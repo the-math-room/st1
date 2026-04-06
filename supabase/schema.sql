@@ -352,3 +352,59 @@ CREATE POLICY "Enable insert for attempts" ON math_attempts FOR INSERT TO anon W
 -- 3. Ensure your own account is a teacher
 -- Replace 'your_username' with the one you actually use
 UPDATE students SET role = 'teacher' WHERE username = 'your_username';
+
+-- =======================
+
+-- 1. Create the Classes table
+CREATE TABLE classes (
+  id SERIAL PRIMARY KEY,
+  class_name TEXT UNIQUE NOT NULL -- e.g., 'Class 1', 'Class 101'
+);
+
+-- 2. Create the Bridge Table (The "Curriculum")
+CREATE TABLE class_curriculum (
+  class_id INT REFERENCES classes(id) ON DELETE CASCADE,
+  category TEXT, -- matches 'category' in math_tasks
+  PRIMARY KEY (class_id, category)
+);
+
+-- 3. Link Students to a Class
+ALTER TABLE students ADD COLUMN class_id INT REFERENCES classes(id);
+
+-- 4. Seed some initial data so you don't have an empty app
+INSERT INTO classes (class_name) VALUES ('1'), ('101');
+
+-- Example: Assign 'median' to Class 101 and 'addition' to Class 1
+INSERT INTO class_curriculum (class_id, category) 
+VALUES 
+  ((SELECT id FROM classes WHERE class_name = '101'), 'median'),
+  ((SELECT id FROM classes WHERE class_name = '1'), 'addition');
+
+-- =======================
+
+DROP FUNCTION secure_login(text, text);
+
+CREATE OR REPLACE FUNCTION secure_login(
+    input_username TEXT, 
+    input_password TEXT
+)
+RETURNS TABLE (
+    id INT, 
+    username TEXT, 
+    display_name TEXT, 
+    must_reset_password BOOLEAN, 
+    class_id INT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        s.id, 
+        s.username, 
+        s.display_name, 
+        s.must_reset_password, 
+        s.class_id
+    FROM students s
+    WHERE s.username = input_username 
+      AND s.password = crypt(input_password, s.password);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

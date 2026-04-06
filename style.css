@@ -178,12 +178,6 @@ button:disabled { background: var(--border); cursor: not-allowed; }
     opacity: 1;
 }
 
-.mastery-card.is-active {
-    background: var(--bg-card);
-    border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(62, 207, 142, 0.15);
-    opacity: 1;
-}
 
 .mini-bar-bg {
     width: 100%;

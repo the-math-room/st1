@@ -7,9 +7,17 @@ let isDrillActive = false, usedHelpThisRound = false;
 let currentStudent = JSON.parse(localStorage.getItem('math_session'));
 
 async function refreshUI() {
-    if (!currentStudent || currentStudent.role !== 'student') return;
-    const curriculum = await api.getCurriculum(currentStudent.id);
-    ui.renderMasteryCards(curriculum, currentCategory, selectedCategories);
+    // Ensure we have a student and they are assigned to a class
+    if (!currentStudent || !currentStudent.class_id) {
+        console.warn("Student has no class assigned.");
+        return;
+    }
+
+    // Pass the class_id to the API call
+    const curriculum = await api.getCurriculum(currentStudent.id, currentStudent.class_id);
+    
+    // We already decided to drop the "activeCategory" highlight
+    ui.renderMasteryCards(curriculum, selectedCategories);
     
     const startBtn = document.getElementById('start-drill-btn');
     const instr = document.getElementById('instruction-text');

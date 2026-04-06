@@ -40,16 +40,16 @@ export const ui = {
         if (instr) instr.style.visibility = isDrill ? 'hidden' : 'visible';
     },
 
-    renderMasteryCards(curriculum, activeCategory, selectedCategories = []) {
+    renderMasteryCards(curriculum, selectedCategories = []) {
         const grid = getEl('mastery-grid');
         if (!grid) return;
 
         grid.innerHTML = curriculum.map(item => {
             const pct = Math.round(item.mastery_score * 100);
-            const activeClass = item.category === activeCategory ? 'is-active' : '';
+            // Removed activeClass logic entirely
             const selectedClass = selectedCategories.includes(item.category) ? 'is-selected' : '';
             return `
-                <div class="mastery-card ${activeClass} ${selectedClass}" data-cat="${item.category}">
+                <div class="mastery-card ${selectedClass}" data-cat="${item.category}">
                     <span class="label">${item.category}</span>
                     <div class="mini-bar-bg"><div class="mini-bar-fill" style="width: ${pct}%"></div></div>
                     <span class="percent">${pct}%</span>

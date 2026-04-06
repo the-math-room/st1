@@ -15,19 +15,29 @@ export const api = {
         return data[0];
     },
 
-    async getCurriculum(studentId) {
-        // Fetch categories
-        const { data: allTasks, error: taskErr } = await supabase.from('math_tasks').select('category');
-        if (taskErr) { console.error("Task Fetch Error:", taskErr); return []; }
+    async getCurriculum(studentId, classId) {
+        // 1. Fetch categories assigned to this student's class
+        const { data: curriculum, error: curErr } = await supabase
+            .from('class_curriculum')
+            .select('category')
+            .eq('class_id', classId);
         
-        const uniqueCategories = [...new Set(allTasks.map(t => t.category))].sort();
+        if (curErr) { console.error("Curriculum Fetch Error:", curErr); return []; }
+        
+        const categories = curriculum.map(c => c.category);
+        if (categories.length === 0) return [];
 
-        // Fetch scores
-        const { data: scores, error: scoreErr } = await supabase.from('student_mastery')
-            .select('category, mastery_score').eq('student_id', studentId);
+        // 2. Fetch mastery scores for ONLY these categories
+        const { data: scores, error: scoreErr } = await supabase
+            .from('student_mastery')
+            .select('category, mastery_score')
+            .eq('student_id', studentId)
+            .in('category', categories);
+            
         if (scoreErr) console.warn("Score Fetch Warning:", scoreErr);
 
-        return uniqueCategories.map(cat => {
+        // 3. Combine them
+        return categories.map(cat => {
             const match = scores?.find(s => s.category === cat);
             return { category: cat, mastery_score: match ? match.mastery_score : 0 };
         });
