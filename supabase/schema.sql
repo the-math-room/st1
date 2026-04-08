@@ -408,3 +408,37 @@ BEGIN
       AND s.password = crypt(input_password, s.password);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ===========================
+
+-- 1. Remove the old version so we can change the return structure
+DROP FUNCTION IF EXISTS secure_login(text, text);
+
+-- 2. Create the corrected version
+CREATE OR REPLACE FUNCTION secure_login(
+    input_username TEXT, 
+    input_password TEXT
+)
+RETURNS TABLE (
+    id INT, 
+    username TEXT, 
+    display_name TEXT, 
+    must_reset BOOLEAN, -- Renamed to match your JS 'must_reset' check
+    class_id INT,
+    role TEXT            -- Added back!
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        s.id, 
+        s.username, 
+        s.display_name, 
+        s.must_reset_password, 
+        s.class_id,
+        s.role
+    FROM students s
+    WHERE s.username = input_username 
+      -- Comparing hashed password
+      AND s.password = crypt(input_password, s.password);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -1,7 +1,7 @@
 import { api } from './modules/api.js';
 import { ui } from './modules/ui.js';
 
-const CONFIG = { MIN_CATEGORIES: 1, DELAY_CORRECT: 1500, DELAY_WRONG: 1000 };
+const CONFIG = { MIN_CATEGORIES: 1, DELAY_CORRECT: 0, DELAY_WRONG: 0 };
 let currentTaskId = null, currentCategory = null, selectedCategories = [];
 let isDrillActive = false, usedHelpThisRound = false;
 let currentStudent = JSON.parse(localStorage.getItem('math_session'));
