@@ -78,11 +78,26 @@ export const api = {
         return data;
     },
 
-    async adminAddStudent(username, displayName, tempPass) {
+    async adminGetClasses() {
+        const { data, error } = await supabase.rpc('admin_get_classes');
+        if (error) throw error;
+        return data;
+    },
+
+    async adminAddStudent(username, displayName, tempPass, classId) {
         const { data, error } = await supabase.rpc('admin_add_student', {
             new_username: username,
             new_display_name: displayName,
-            temp_password: tempPass
+            temp_password: tempPass,
+            target_class_id: parseInt(classId) // Ensure it's an int
+        });
+        if (error) throw error;
+        return data;
+    },
+
+    async adminBulkAddStudents(studentArray) {
+        const { data, error } = await supabase.rpc('admin_bulk_add_students', { 
+            student_data: studentArray 
         });
         if (error) throw error;
         return data;

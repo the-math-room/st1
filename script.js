@@ -34,12 +34,27 @@ async function showTeacherDashboard() {
     if (sv) sv.style.display = 'none';
     if (tp) tp.style.display = 'block';
     
+    // 1. Load Classes into the dropdown
+    const classes = await api.adminGetClasses();
+    const classSelect = document.getElementById('new-student-class');
+    if (classSelect) {
+        classSelect.innerHTML = '<option value="">Select Class...</option>' + 
+            classes.map(c => `<option value="${c.id}">Class ${c.class_name}</option>`).join('');
+    }
+
+    // 2. Load Students with their Class Name
     const students = await api.adminGetStudents();
     const list = document.getElementById('admin-student-list');
     if (list) {
         list.innerHTML = students.map(s => `
             <div class="card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 12px; border: 1px solid #e2e8f0;">
-                <div style="text-align: left;"><strong>${s.display_name}</strong><br><small>${s.username}</small></div>
+                <div style="text-align: left;">
+                    <strong>${s.display_name}</strong> 
+                    <span style="font-size: 0.7rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">
+                        Class ${s.class_name || 'Unassigned'}
+                    </span>
+                    <br><small>${s.username}</small>
+                </div>
                 <button class="secondary-btn" onclick="window.triggerReset('${s.username}')" 
                     style="${s.must_reset ? 'opacity: 0.5' : 'background: #fee2e2; color: #ef4444;'}">
                     ${s.must_reset ? 'Reset Pending' : 'Force Reset'}
@@ -94,12 +109,54 @@ document.getElementById('add-student-form')?.addEventListener('submit', async (e
     const success = await api.adminAddStudent(
         document.getElementById('new-student-username').value,
         document.getElementById('new-student-name').value,
-        document.getElementById('new-student-pass').value
+        document.getElementById('new-student-pass').value,
+        document.getElementById('new-student-class').value // Added this
     );
     if (success) { 
         document.getElementById('add-student-form').reset(); 
         showTeacherDashboard(); 
     }
+});
+
+document.getElementById('upload-csv-btn')?.addEventListener('click', async () => {
+    const fileInput = document.getElementById('csv-file-input');
+    const classId = document.getElementById('new-student-class').value; // Borrow the class selection
+
+    if (!fileInput.files.length || !classId) {
+        alert("Please select a file AND a class first!");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+        const text = e.target.result;
+        const rows = text.split('\n').filter(row => row.trim().length > 0);
+        
+        const studentArray = rows.map(row => {
+            const [name, username, password] = row.split(',').map(item => item.trim());
+            return {
+                display_name: name,
+                username: username,
+                password: password,
+                class_id: classId
+            };
+        });
+
+        try {
+            // CHANGE THIS LINE: Use api instead of supabase
+            await api.adminBulkAddStudents(studentArray); 
+            
+            alert(`Successfully added ${studentArray.length} students!`);
+            showTeacherDashboard(); 
+        } catch (err) {
+            console.error("Bulk Import Error:", err);
+            alert("Error importing CSV. Check the console for details.");
+        }
+    };
+
+    reader.readAsText(file);
 });
 
 async function handleAnswer() {

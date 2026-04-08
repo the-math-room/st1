@@ -144,6 +144,32 @@ button:disabled { background: var(--border); cursor: not-allowed; }
     margin-top: 1.5rem;
 }
 
+#add-student-form {
+    display: flex;
+    flex-direction: column; /* Stack vertically */
+    gap: 12px;
+    margin-top: 15px;
+}
+
+#add-student-form input, 
+#add-student-form select {
+    width: 100%;
+    padding: 14px; /* Slightly larger padding for easier tapping/typing */
+    font-size: 0.95rem;
+    background: var(--bg-main);
+    border: 2px solid var(--border);
+    flex: none; /* Disable the flex: 1 we had earlier */
+}
+
+#add-student-form button[type="submit"] {
+    width: 100%;
+    padding: 14px;
+    background: var(--secondary); /* Distinguish it from student buttons */
+    margin-top: 5px;
+}
+
+
+
 /* ==========================================================================
    5. MASTERY GRID & CARDS
    ========================================================================== */

@@ -442,3 +442,62 @@ BEGIN
       AND s.password = crypt(input_password, s.password);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
+
+-- 1. FIX SEED DATA: Hash the passwords so login actually works
+UPDATE students 
+SET password = crypt(password, gen_salt('bf')) 
+WHERE password NOT LIKE '$2a$%'; -- Only hash if not already hashed
+
+-- 2. IMPROVE ADMIN VIEW: Return class names instead of just IDs
+DROP FUNCTION IF EXISTS admin_get_students();
+CREATE OR REPLACE FUNCTION admin_get_students()
+RETURNS TABLE (username TEXT, display_name TEXT, must_reset BOOLEAN, class_name TEXT) AS $$
+BEGIN
+    RETURN QUERY 
+    SELECT s.username, s.display_name, s.must_reset_password, c.class_name
+    FROM students s
+    LEFT JOIN classes c ON s.class_id = c.id
+    WHERE s.role = 'student'
+    ORDER BY c.class_name ASC, s.display_name ASC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. HELPER: Get all classes for the teacher's dropdown
+CREATE OR REPLACE FUNCTION admin_get_classes()
+RETURNS TABLE (id INT, class_name TEXT) AS $$
+BEGIN
+    RETURN QUERY SELECT c.id, c.class_name FROM classes c;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. UPDATE: Allow admin_add_student to take a class_id
+DROP FUNCTION IF EXISTS admin_add_student(text, text, text);
+CREATE OR REPLACE FUNCTION admin_add_student(new_username TEXT, new_display_name TEXT, temp_password TEXT, target_class_id INT)
+RETURNS BOOLEAN AS $$
+BEGIN
+    INSERT INTO students (username, display_name, password, role, must_reset_password, class_id)
+    VALUES (new_username, new_display_name, crypt(temp_password, gen_salt('bf')), 'student', TRUE, target_class_id);
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==================================
+
+CREATE OR REPLACE FUNCTION admin_bulk_add_students(student_data JSONB)
+RETURNS BOOLEAN AS $$
+BEGIN
+    INSERT INTO students (username, display_name, password, role, must_reset_password, class_id)
+    SELECT 
+        (obj->>'username'), 
+        (obj->>'display_name'), 
+        crypt((obj->>'password'), gen_salt('bf')), 
+        'student', 
+        TRUE, 
+        (obj->>'class_id')::int
+    FROM jsonb_array_elements(student_data) AS obj;
+    
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
