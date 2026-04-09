@@ -28,39 +28,47 @@ async function refreshUI() {
 }
 
 async function showTeacherDashboard() {
-    ui.toggleAuth(true);
-    const sv = document.getElementById('student-view');
-    const tp = document.getElementById('teacher-panel');
-    if (sv) sv.style.display = 'none';
-    if (tp) tp.style.display = 'block';
-    
-    // 1. Load Classes into the dropdown
-    const classes = await api.adminGetClasses();
-    const classSelect = document.getElementById('new-student-class');
-    if (classSelect) {
-        classSelect.innerHTML = '<option value="">Select Class...</option>' + 
-            classes.map(c => `<option value="${c.id}">Class ${c.class_name}</option>`).join('');
-    }
+    try {
+        ui.toggleAuth(true);
+        const sv = document.getElementById('student-view');
+        const tp = document.getElementById('teacher-panel');
+        if (sv) sv.style.display = 'none';
+        if (tp) tp.style.display = 'block';
 
-    // 2. Load Students with their Class Name
-    const students = await api.adminGetStudents();
-    const list = document.getElementById('admin-student-list');
-    if (list) {
-        list.innerHTML = students.map(s => `
-            <div class="card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 12px; border: 1px solid #e2e8f0;">
-                <div style="text-align: left;">
-                    <strong>${s.display_name}</strong> 
-                    <span style="font-size: 0.7rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">
-                        Class ${s.class_name || 'Unassigned'}
-                    </span>
-                    <br><small>${s.username}</small>
+        const classes = await api.adminGetClasses();
+        console.log('classes:', classes);
+
+        const classSelect = document.getElementById('new-student-class');
+        if (classSelect) {
+            classSelect.innerHTML =
+                '<option value="">Select Class...</option>' +
+                classes.map(c => `<option value="${c.id}">Class ${c.class_name}</option>`).join('');
+        }
+
+        const students = await api.adminGetStudents();
+        console.log('students:', students);
+
+        const list = document.getElementById('admin-student-list');
+        if (list) {
+            list.innerHTML = (students ?? []).map(s => `
+                <div class="card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 12px; border: 1px solid #e2e8f0;">
+                    <div style="text-align: left;">
+                        <strong>${s.display_name}</strong>
+                        <span style="font-size: 0.7rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">
+                            Class ${s.class_name || 'Unassigned'}
+                        </span>
+                        <br><small>${s.username}</small>
+                    </div>
+                    <button class="secondary-btn" onclick="window.triggerReset('${s.username}')"
+                        style="${s.must_reset ? 'opacity: 0.5' : 'background: #fee2e2; color: #ef4444;'}">
+                        ${s.must_reset ? 'Reset Pending' : 'Force Reset'}
+                    </button>
                 </div>
-                <button class="secondary-btn" onclick="window.triggerReset('${s.username}')" 
-                    style="${s.must_reset ? 'opacity: 0.5' : 'background: #fee2e2; color: #ef4444;'}">
-                    ${s.must_reset ? 'Reset Pending' : 'Force Reset'}
-                </button>
-            </div>
-        `).join('');
+            `).join('');
+        }
+    } catch (err) {
+        console.error('Teacher dashboard load failed:', err);
+        alert(`Teacher dashboard load failed: ${err.message}`);
     }
 }
 

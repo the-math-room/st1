@@ -309,3 +309,146 @@ begin
   return found;
 end;
 $$;
+
+-- ===========================
+
+-- Return only the curriculum + mastery needed for the current student screen
+create or replace function public.get_student_curriculum(
+  input_student_id int,
+  input_class_id int
+)
+returns table (
+  category text,
+  mastery_score double precision
+)
+language sql
+security definer
+as $$
+  with assigned_categories as (
+    select cc.category
+    from class_curriculum cc
+    where cc.class_id = input_class_id
+  )
+  select
+    ac.category,
+    coalesce(sm.mastery_score, 0.0) as mastery_score
+  from assigned_categories ac
+  left join student_mastery sm
+    on sm.student_id = input_student_id
+   and sm.category = ac.category
+  order by ac.category;
+$$;
+
+-- Return one random question from the selected categories
+create or replace function public.get_random_question_for_categories(
+  selected_categories text[]
+)
+returns table (
+  id int,
+  question text,
+  expected_answer text,
+  category text
+)
+language sql
+security definer
+as $$
+  select
+    mt.id,
+    mt.question,
+    mt.expected_answer,
+    mt.category
+  from math_tasks mt
+  where mt.category = any(selected_categories)
+  order by random()
+  limit 1;
+$$;
+
+-- Optional: only if you later want a student history panel
+create or replace function public.get_student_attempts(
+  input_student_id int,
+  limit_count int default 20
+)
+returns table (
+  id int,
+  task_id int,
+  student_id int,
+  user_response text,
+  is_correct boolean,
+  submitted_at timestamptz
+)
+language sql
+security definer
+as $$
+  select
+    ma.id,
+    ma.task_id,
+    ma.student_id,
+    ma.user_response,
+    ma.is_correct,
+    ma.submitted_at
+  from math_attempts ma
+  where ma.student_id = input_student_id
+  order by ma.submitted_at desc
+  limit limit_count;
+$$;
+
+-- ===========================
+
+-- remove old broad read policies
+drop policy if exists "read mastery" on student_mastery;
+drop policy if exists "read students for login" on students;
+drop policy if exists "read tasks" on math_tasks;
+drop policy if exists "read classes" on classes;
+drop policy if exists "read curriculum" on class_curriculum;
+drop policy if exists "insert attempts" on math_attempts;
+
+-- keep only what the browser still truly needs directly
+create policy "insert attempts"
+on math_attempts
+for insert
+to anon
+with check (true);
+
+drop policy if exists "insert attempts" on math_attempts;
+
+-- ==========================
+
+create or replace function public.admin_get_classes()
+returns table (id int, class_name text)
+language plpgsql
+security definer
+as $$
+begin
+  return query
+  select c.id, c.class_name
+  from classes c
+  order by c.class_name;
+end;
+$$;
+
+create or replace function public.admin_get_students()
+returns table (
+  username text,
+  display_name text,
+  must_reset boolean,
+  class_name text
+)
+language plpgsql
+security definer
+as $$
+begin
+  return query
+  select
+    s.username,
+    s.display_name,
+    s.must_reset_password,
+    c.class_name
+  from students s
+  left join classes c on s.class_id = c.id
+  where coalesce(s.role, 'student') = 'student'
+  order by c.class_name asc nulls last, s.display_name asc;
+end;
+$$;
+
+-- ========================
+

@@ -6,61 +6,51 @@ const supabase = createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.KEY);
 export const api = {
     async checkAnswer(id, guess, studentId, usedHelp = false) {
         const { data, error } = await supabase.rpc('check_math_answer', {
-            question_id: id, 
-            user_guess: guess, 
+            question_id: id,
+            user_guess: guess,
             input_student_id: studentId,
-            input_used_help: usedHelp 
+            input_used_help: usedHelp
         });
         if (error) { console.error("RPC Error:", error); throw error; }
-        return data[0];
+        return data?.[0] ?? null;
     },
 
     async getCurriculum(studentId, classId) {
-        // 1. Fetch categories assigned to this student's class
-        const { data: curriculum, error: curErr } = await supabase
-            .from('class_curriculum')
-            .select('category')
-            .eq('class_id', classId);
-        
-        if (curErr) { console.error("Curriculum Fetch Error:", curErr); return []; }
-        
-        const categories = curriculum.map(c => c.category);
-        if (categories.length === 0) return [];
-
-        // 2. Fetch mastery scores for ONLY these categories
-        const { data: scores, error: scoreErr } = await supabase
-            .from('student_mastery')
-            .select('category, mastery_score')
-            .eq('student_id', studentId)
-            .in('category', categories);
-            
-        if (scoreErr) console.warn("Score Fetch Warning:", scoreErr);
-
-        // 3. Combine them
-        return categories.map(cat => {
-            const match = scores?.find(s => s.category === cat);
-            return { category: cat, mastery_score: match ? match.mastery_score : 0 };
+        const { data, error } = await supabase.rpc('get_student_curriculum', {
+            input_student_id: studentId,
+            input_class_id: classId
         });
+
+        if (error) {
+            console.error("Curriculum RPC Error:", error);
+            return [];
+        }
+
+        return data ?? [];
     },
 
     async getRandomQuestion(selectedCategories = []) {
         if (!selectedCategories.length) return null;
-        const { data: questions, error } = await supabase.from('math_tasks')
-            .select('*').in('category', selectedCategories);
-        
-        if (error) { console.error("Question Fetch Error:", error); return null; }
-        if (!questions?.length) return null;
-        
-        return questions[Math.floor(Math.random() * questions.length)];
+
+        const { data, error } = await supabase.rpc('get_random_question_for_categories', {
+            selected_categories: selectedCategories
+        });
+
+        if (error) {
+            console.error("Question RPC Error:", error);
+            return null;
+        }
+
+        return data?.[0] ?? null;
     },
 
-    async login(username, password) { 
+    async login(username, password) {
         const { data, error } = await supabase.rpc('secure_login', {
             input_username: username,
             input_password: password
         });
         if (error || !data.length) throw new Error("Invalid username or password.");
-        return data[0]; 
+        return data[0];
     },
 
     async setPassword(username, password) {
@@ -89,15 +79,15 @@ export const api = {
             new_username: username,
             new_display_name: displayName,
             temp_password: tempPass,
-            target_class_id: parseInt(classId) // Ensure it's an int
+            target_class_id: parseInt(classId)
         });
         if (error) throw error;
         return data;
     },
 
     async adminBulkAddStudents(studentArray) {
-        const { data, error } = await supabase.rpc('admin_bulk_add_students', { 
-            student_data: studentArray 
+        const { data, error } = await supabase.rpc('admin_bulk_add_students', {
+            student_data: studentArray
         });
         if (error) throw error;
         return data;
