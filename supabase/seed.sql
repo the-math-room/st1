@@ -1,9 +1,12 @@
--- Create a test class
+-- =========================
+-- TOY SEED DATA
+-- =========================
+
 insert into classes (class_name)
 values ('Test Class')
 on conflict (class_name) do nothing;
 
--- Create a toy teacher
+-- Teacher
 insert into students (
   username,
   display_name,
@@ -23,7 +26,7 @@ where not exists (
   select 1 from students where username = 'teacher1'
 );
 
--- Create toy students assigned to Test Class
+-- Students
 insert into students (
   username,
   display_name,
@@ -34,7 +37,7 @@ insert into students (
 )
 select
   'alice1',
-  'Alice Example',
+  'Alice E.',
   crypt('math123', gen_salt('bf')),
   true,
   'student',
@@ -55,7 +58,7 @@ insert into students (
 )
 select
   'bobby1',
-  'Bobby Example',
+  'Bobby E.',
   crypt('math123', gen_salt('bf')),
   true,
   'student',
@@ -66,20 +69,20 @@ where c.class_name = 'Test Class'
     select 1 from students where username = 'bobby1'
   );
 
--- Add curriculum for the class
+-- Curriculum
 insert into class_curriculum (class_id, category)
-select id, 'addition'
-from classes
-where class_name = 'Test Class'
+select c.id, 'addition'
+from classes c
+where c.class_name = 'Test Class'
 on conflict do nothing;
 
 insert into class_curriculum (class_id, category)
-select id, 'median'
-from classes
-where class_name = 'Test Class'
+select c.id, 'median'
+from classes c
+where c.class_name = 'Test Class'
 on conflict do nothing;
 
--- Sample questions
+-- Questions
 insert into math_tasks (question, expected_answer, category)
 select *
 from (
