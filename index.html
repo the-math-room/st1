@@ -7,36 +7,66 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <div id="login-screen">
-        <form id="login-form" class="card">
+    <div id="login-screen" class="app-shell">
+        <form id="login-form" class="card auth-card" method="post">
             <h2>Classroom Login</h2>
-            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 1rem;">Enter your student credentials</p>
-            <input type="text" id="username-input" name="username" autocomplete="username" placeholder="Username" required>
-            <input type="password" id="password-input" name="password" autocomplete="current-password" placeholder="Password" required>
+            <p class="text-muted text-sm form-intro">Enter your student credentials</p>
+
+            <input
+                type="text"
+                id="username-input"
+                name="username"
+                autocomplete="username"
+                placeholder="Username"
+                required
+            >
+
+            <input
+                type="password"
+                id="password-input"
+                name="password"
+                autocomplete="current-password"
+                placeholder="Password"
+                required
+            >
+
             <button type="submit">Login</button>
         </form>
 
-        <form id="setup-form" class="card" style="display: none;">
+        <form id="setup-form" class="card auth-card is-hidden" method="post">
             <h2>Update Password</h2>
-            <p style="font-size: 0.8rem; color: #3b82f6; margin-bottom: 1rem;">Teacher has authorized a password change.</p>
-            <input type="text" id="setup-username" placeholder="Username" required readonly>
-            <input type="password" id="setup-password" placeholder="New Password" required>
+            <p class="text-info text-sm form-intro">Teacher has authorized a password change.</p>
+
+            <input
+                type="text"
+                id="setup-username"
+                placeholder="Username"
+                required
+                readonly
+            >
+
+            <input
+                type="password"
+                id="setup-password"
+                placeholder="New Password"
+                required
+            >
+
             <button type="submit">Save & Continue</button>
         </form>
     </div>
 
-    <main id="app" style="display: none;">
-        <section id="teacher-panel" style="display: none;">
-            <header>
+    <main id="app" class="app-shell is-hidden">
+        <section id="teacher-panel" class="is-hidden">
+            <header class="section-header">
                 <h2>Teacher Dashboard</h2>
-                <button id="teacher-logout" class="secondary-btn">Logout</button>
+                <button id="teacher-logout" class="secondary-btn" type="button">Logout</button>
             </header>
-            
-            <div id="add-student-container" class="card" style="margin: 1rem 0; border: 2px dashed #e2e8f0; padding: 1.5rem;">
-                <h3 style="text-align: left; margin-bottom: 1rem;">Register New Student</h3>
-                
-                <form id="add-student-form">
+
+            <div id="add-student-container" class="card panel panel--dashed">
+                <h3 class="panel-title">Register New Student</h3>
+
+                <form id="add-student-form" class="stack-form">
                     <div class="form-group">
                         <label for="new-student-name">Full Name</label>
                         <input type="text" id="new-student-name" placeholder="e.g. Jane Doe" required>
@@ -47,12 +77,13 @@
                         <input type="text" id="new-student-username" placeholder="e.g. janed123" required>
                     </div>
 
-                    <div style="display: flex; gap: 10px;">
-                        <div class="form-group" style="flex: 1;">
+                    <div class="form-row">
+                        <div class="form-group">
                             <label for="new-student-pass">Temp Password</label>
                             <input type="text" id="new-student-pass" placeholder="math123" required>
                         </div>
-                        <div class="form-group" style="flex: 1;">
+
+                        <div class="form-group">
                             <label for="new-student-class">Class</label>
                             <select id="new-student-class" required>
                                 <option value="">Select...</option>
@@ -60,49 +91,57 @@
                         </div>
                     </div>
 
-                    <button type="submit">Create Student Account</button>
+                    <button type="submit" class="teacher-submit-btn">Create Student Account</button>
                 </form>
             </div>
 
-            <div id="bulk-import-container" class="card" style="margin-top: 1rem; border: 1px solid var(--border); padding: 1rem;">
+            <div id="bulk-import-container" class="card panel panel--compact">
                 <h4 class="label">Bulk Import (CSV)</h4>
-                <p style="font-size: 0.7rem; margin-bottom: 10px;">Format: name, username, password</p>
-                <input type="file" id="csv-file-input" accept=".csv" style="font-size: 0.8rem;">
-                <button id="upload-csv-btn" class="secondary-btn" style="width: 100%; margin-top: 10px;">Upload Student List</button>
+                <p class="text-muted text-xs panel-note">Format: name, username, password</p>
+
+                <input type="file" id="csv-file-input" accept=".csv" class="file-input">
+
+                <button id="upload-csv-btn" class="secondary-btn button-block" type="button">
+                    Upload Student List
+                </button>
             </div>
 
-            <div id="admin-student-list"></div>
+            <div id="admin-student-list" class="student-list"></div>
         </section>
 
         <section id="student-view">
-            <header id="dashboard">
+            <header id="dashboard" class="section-header">
                 <div id="user-info">
                     <span id="student-name">Loading...</span>
-                    <button id="logout-btn" class="secondary-btn">Switch User</button>
+                    <button id="logout-btn" class="secondary-btn" type="button">Switch User</button>
                 </div>
+
                 <p id="instruction-text"></p>
+
                 <div id="mastery-grid"></div>
+
                 <div id="controls">
-                    <button id="start-drill-btn" disabled>Start Drill</button>
-                    <button id="stop-drill-btn" style="display: none;">Change Categories</button>
+                    <button id="start-drill-btn" type="button" disabled>Start Drill</button>
+                    <button id="stop-drill-btn" class="is-hidden" type="button">Change Categories</button>
                 </div>
             </header>
 
             <hr>
 
-            <section id="question-container" style="display: none;">
+            <section id="question-container" class="is-hidden">
                 <span id="category-tag">--</span>
                 <h2 id="question">--</h2>
-                <form id="answer-form" class="input-group">
-                    <input 
-                        type="number" 
-                        id="answer-input" 
-                        name="math-result-field" 
-                        placeholder="?" 
-                        autocomplete="off" 
-                        data-lpignore="true" 
+
+                <form id="answer-form" class="input-group" method="post">
+                    <input
+                        type="number"
+                        id="answer-input"
+                        name="math-result-field"
+                        placeholder="?"
+                        autocomplete="off"
+                        data-lpignore="true"
                         data-1p-ignore
-                        step="any" 
+                        step="any"
                         required
                     >
                     <button type="submit" id="submit-btn">Submit</button>

@@ -5,112 +5,211 @@ const QuestionRenderers = {
     median: medianRenderer,
     addition: defaultRenderer,
     subtraction: defaultRenderer,
-    default: defaultRenderer 
+    default: defaultRenderer
 };
 
-// Helper to grab elements safely
 const getEl = (id) => document.getElementById(id);
+
+const showEl = (el) => {
+    if (el) el.classList.remove('is-hidden');
+};
+
+const hideEl = (el) => {
+    if (el) el.classList.add('is-hidden');
+};
+
+const setText = (el, value) => {
+    if (el) el.innerText = value;
+};
 
 export const ui = {
     activeRenderer: null,
 
-    // Core UI logic
     toggleAuth(isLoggedIn, student = null) {
         const loginScreen = getEl('login-screen');
         const mainApp = getEl('app');
         const studentName = getEl('student-name');
 
-        if (loginScreen) loginScreen.style.display = isLoggedIn ? 'none' : 'flex';
-        if (mainApp) mainApp.style.display = isLoggedIn ? 'block' : 'none';
-        if (student && studentName) studentName.innerText = student.display_name;
+        if (isLoggedIn) {
+            hideEl(loginScreen);
+            showEl(mainApp);
+        } else {
+            showEl(loginScreen);
+            hideEl(mainApp);
+        }
+
+        if (student && studentName) {
+            studentName.innerText = student.display_name;
+        }
+    },
+
+    showTeacherView() {
+        const studentView = getEl('student-view');
+        const teacherPanel = getEl('teacher-panel');
+
+        hideEl(studentView);
+        showEl(teacherPanel);
+    },
+
+    showStudentView() {
+        const studentView = getEl('student-view');
+        const teacherPanel = getEl('teacher-panel');
+
+        showEl(studentView);
+        hideEl(teacherPanel);
     },
 
     setMode(mode) {
         const isDrill = mode === 'drill';
-        const qContainer = getEl('question-container');
-        const footer = getEl('status-footer');
+
+        const questionContainer = getEl('question-container');
+        const statusFooter = getEl('status-footer');
         const startBtn = getEl('start-drill-btn');
         const stopBtn = getEl('stop-drill-btn');
-        const instr = getEl('instruction-text');
+        const instructionText = getEl('instruction-text');
 
-        if (qContainer) qContainer.style.display = isDrill ? 'block' : 'none';
-        if (footer) footer.style.display = isDrill ? 'block' : 'none';
-        if (startBtn) startBtn.style.display = isDrill ? 'none' : 'inline-block';
-        if (stopBtn) stopBtn.style.display = isDrill ? 'inline-block' : 'none';
-        if (instr) instr.style.visibility = isDrill ? 'hidden' : 'visible';
+        if (isDrill) {
+            showEl(questionContainer);
+            hideEl(startBtn);
+            showEl(stopBtn);
+
+            if (statusFooter) showEl(statusFooter);
+            if (instructionText) instructionText.style.visibility = 'hidden';
+            return;
+        }
+
+        hideEl(questionContainer);
+        showEl(startBtn);
+        hideEl(stopBtn);
+
+        if (statusFooter) hideEl(statusFooter);
+        if (instructionText) instructionText.style.visibility = 'visible';
+    },
+
+    setInstructionText(text) {
+        const instructionText = getEl('instruction-text');
+        setText(instructionText, text);
+    },
+
+    setStartButtonEnabled(isEnabled) {
+        const startBtn = getEl('start-drill-btn');
+        if (startBtn) startBtn.disabled = !isEnabled;
     },
 
     renderMasteryCards(curriculum, selectedCategories = []) {
         const grid = getEl('mastery-grid');
         if (!grid) return;
 
-        grid.innerHTML = curriculum.map(item => {
+        grid.innerHTML = curriculum.map((item) => {
             const pct = Math.round(item.mastery_score * 100);
-            // Removed activeClass logic entirely
             const selectedClass = selectedCategories.includes(item.category) ? 'is-selected' : '';
+
             return `
                 <div class="mastery-card ${selectedClass}" data-cat="${item.category}">
                     <span class="label">${item.category}</span>
-                    <div class="mini-bar-bg"><div class="mini-bar-fill" style="width: ${pct}%"></div></div>
+                    <div class="mini-bar-bg">
+                        <div class="mini-bar-fill" style="width: ${pct}%"></div>
+                    </div>
                     <span class="percent">${pct}%</span>
-                </div>`;
+                </div>
+            `;
         }).join('');
     },
 
     renderQuestion(questionObj) {
-        this.activeRenderer = QuestionRenderers[questionObj.category] || QuestionRenderers.default;
+        this.activeRenderer =
+            QuestionRenderers[questionObj.category] || QuestionRenderers.default;
+
         const problemHtml = this.activeRenderer.render(questionObj);
-        const qBox = getEl('question');
-        if (qBox) {
-            qBox.innerHTML = `
-                ${problemHtml}
-                <button id="help-btn" class="secondary-btn" style="margin-top: 10px;">How do I do this?</button>
-                <div id="help-display" style="display: none;" class="help-box"></div>
-            `;
-        }
+        const questionBox = getEl('question');
+
+        if (!questionBox) return;
+
+        questionBox.innerHTML = `
+            ${problemHtml}
+            <button id="help-btn" class="secondary-btn button-block" type="button">
+                How do I do this?
+            </button>
+            <div id="help-display" class="help-box is-hidden"></div>
+        `;
+    },
+
+    setCategoryTag(category) {
+        ui.setCategoryTag(question.category);
     },
 
     showHelpContent(category) {
         const display = getEl('help-display');
-        const btn = getEl('help-btn');
-        if (this.activeRenderer && display) {
-            display.innerHTML = this.activeRenderer.getHelp(category);
-            display.style.display = 'block';
-            if (btn) btn.style.display = 'none';
-        }
+        const button = getEl('help-btn');
+
+        if (!this.activeRenderer || !display) return;
+
+        display.innerHTML = this.activeRenderer.getHelp(category);
+        showEl(display);
+        hideEl(button);
     },
 
     handleCustomAction(actionType) {
-        if (this.activeRenderer && typeof this.activeRenderer.handleAction === 'function') {
+        if (
+            this.activeRenderer &&
+            typeof this.activeRenderer.handleAction === 'function'
+        ) {
             this.activeRenderer.handleAction(actionType);
         }
     },
 
-    setLoading(isLoading, msg = "") {
-        const btn = getEl('submit-btn');
-        const input = getEl('answer-input');
-        const status = getEl('status-msg');
+    setLoading(isLoading, message = '') {
+        const submitBtn = getEl('submit-btn');
+        const answerInput = getEl('answer-input');
+        const statusMsg = getEl('status-msg');
 
-        if (btn) btn.disabled = isLoading;
-        if (input) input.disabled = isLoading;
-        if (msg && status) status.innerText = msg;
-        if (!isLoading && input) input.focus();
+        if (submitBtn) submitBtn.disabled = isLoading;
+        if (answerInput) answerInput.disabled = isLoading;
+        if (message && statusMsg) statusMsg.innerText = message;
+
+        if (!isLoading && answerInput) {
+            answerInput.focus();
+        }
     },
 
     showFeedback(isCorrect) {
         const app = getEl('app');
-        const status = getEl('status-msg');
+        const statusMsg = getEl('status-msg');
+
         if (app) {
             app.classList.remove('is-correct', 'is-wrong');
             app.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
         }
-        if (status) status.innerText = isCorrect ? "Correct! 🎉" : "Try again! ❌";
+
+        if (statusMsg) {
+            statusMsg.innerText = isCorrect ? 'Correct! 🎉' : 'Try again! ❌';
+        }
     },
 
     clearFeedback() {
         const app = getEl('app');
         const input = getEl('answer-input');
-        if (app) app.classList.remove('is-correct', 'is-wrong');
+        const statusMsg = getEl('status-msg');
+        const helpDisplay = getEl('help-display');
+        const helpBtn = getEl('help-btn');
+
+        if (app) {
+            app.classList.remove('is-correct', 'is-wrong');
+        }
+
+        if (statusMsg) {
+            statusMsg.innerText = '';
+        }
+
+        if (helpDisplay) {
+            helpDisplay.innerHTML = '';
+            hideEl(helpDisplay);
+        }
+
+        if (helpBtn) {
+            showEl(helpBtn);
+        }
+
         if (input) {
             input.value = '';
             input.focus();

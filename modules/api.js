@@ -1,7 +1,4 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-import { SUPABASE_CONFIG } from '../config.js';
-
-const supabase = createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.KEY);
+import { supabase } from './supabase-client.js';
 
 export const api = {
     async checkAnswer(id, guess, studentId, usedHelp = false) {
