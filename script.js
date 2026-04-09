@@ -174,6 +174,7 @@ async function handleAnswer() {
 
 async function startRound() {
     if (!isDrillActive) return;
+    usedHelpThisRound = false;
     ui.clearFeedback();
     const q = await api.getRandomQuestion(selectedCategories);
     if (q) {
