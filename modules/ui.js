@@ -135,7 +135,8 @@ export const ui = {
     },
 
     setCategoryTag(category) {
-        ui.setCategoryTag(question.category);
+        const tag = getEl('category-tag');
+        setText(tag, category ?? '--');
     },
 
     showHelpContent(category) {
@@ -172,7 +173,7 @@ export const ui = {
         }
     },
 
-    showFeedback(isCorrect) {
+    showFeedback(isCorrect, message = null) {
         const app = getEl('app');
         const statusMsg = getEl('status-msg');
 
@@ -182,7 +183,7 @@ export const ui = {
         }
 
         if (statusMsg) {
-            statusMsg.innerText = isCorrect ? 'Correct! 🎉' : 'Try again! ❌';
+            statusMsg.innerText = message ?? (isCorrect ? 'Correct! 🎉' : 'Try again! ❌');
         }
     },
 
@@ -214,5 +215,27 @@ export const ui = {
             input.value = '';
             input.focus();
         }
-    }
+    },
+
+    setStatusMessage(message) {
+        const statusMsg = getEl('status-msg');
+        if (statusMsg) statusMsg.innerText = message;
+    },
+
+    showCorrectAnswer(answer) {
+        const display = getEl('help-display');
+        const button = getEl('help-btn');
+
+        if (!display) return;
+
+        display.innerHTML = `
+            <h4>Correct Answer</h4>
+            <p>${answer}</p>
+            <p>Type the correct answer to continue.</p>
+        `;
+
+        showEl(display);
+        hideEl(button);
+    },
+
 };

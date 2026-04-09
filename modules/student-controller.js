@@ -13,6 +13,7 @@ const getEl = (id) => document.getElementById(id);
 export async function initStudentApp(student) {
     state.setStudent(student);
     ui.toggleAuth(true, student);
+    ui.showStudentView();
     ui.setMode('selection');
     await refreshStudentDashboard();
 }
@@ -28,8 +29,6 @@ export async function refreshStudentDashboard() {
     const curriculum = await api.getCurriculum(student.id, student.class_id);
     ui.renderMasteryCards(curriculum, state.selectedCategories);
 
-    const startBtn = getEl('start-drill-btn');
-    const instr = getEl('instruction-text');
     const isReady = state.selectedCategories.length >= CONFIG.MIN_CATEGORIES;
 
     ui.setStartButtonEnabled(isReady);
@@ -57,7 +56,6 @@ export async function stopDrill() {
 export async function startRound() {
     if (!state.isDrillActive) return;
 
-    state.usedHelpThisRound = false;
     ui.clearFeedback();
 
     const question = await api.getRandomQuestion(state.selectedCategories);
@@ -68,10 +66,7 @@ export async function startRound() {
 
     state.setCurrentQuestion(question);
     ui.renderQuestion(question);
-
-    const tag = getEl('category-tag');
-    if (tag) tag.innerText = question.category;
-
+    ui.setCategoryTag(question.category);
     ui.setLoading(false, 'Ready!');
 }
 
@@ -81,6 +76,42 @@ export async function submitAnswer() {
 
     if (!guess || !state.currentTaskId || !state.currentStudent) return;
 
+    if (state.isCorrectionMode) {
+        if (guess === state.currentExpectedAnswer) {
+            ui.setLoading(true, 'Saving...');
+
+            try {
+                const result = await api.checkAnswer(
+                    state.currentTaskId,
+                    guess,
+                    state.currentStudent.id,
+                    state.maxCreditThisQuestion
+                );
+
+                if (!result) {
+                    ui.setLoading(false, 'Error!');
+                    return;
+                }
+
+                ui.showFeedback(true, 'Corrected — moving on.');
+                await refreshStudentDashboard();
+
+                setTimeout(() => {
+                    startRound();
+                }, 250);
+            } catch (error) {
+                console.error('Correction submission failed:', error);
+                ui.setLoading(false, 'Error!');
+            }
+
+            return;
+        }
+
+        ui.showFeedback(false, 'Type the correct answer to continue.');
+        ui.setLoading(false, '');
+        return;
+    }
+
     ui.setLoading(true, 'Checking...');
 
     try {
@@ -88,7 +119,7 @@ export async function submitAnswer() {
             state.currentTaskId,
             guess,
             state.currentStudent.id,
-            state.usedHelpThisRound
+            state.maxCreditThisQuestion
         );
 
         if (!result) {
@@ -96,12 +127,36 @@ export async function submitAnswer() {
             return;
         }
 
-        ui.showFeedback(result.is_correct);
-        await refreshStudentDashboard();
+        if (result.is_correct) {
+            ui.showFeedback(true, 'Correct! 🎉');
+            await refreshStudentDashboard();
 
-        setTimeout(() => {
-            startRound();
-        }, result.is_correct ? CONFIG.DELAY_CORRECT : CONFIG.DELAY_WRONG);
+            setTimeout(() => {
+                startRound();
+            }, result.is_correct ? CONFIG.DELAY_CORRECT : CONFIG.DELAY_WRONG);
+
+            return;
+        }
+
+        state.registerWrongAttempt();
+
+        if (state.wrongAttemptsThisQuestion === 1) {
+            ui.showFeedback(false, 'Not quite — try again. Max credit is now 50%.');
+            ui.setLoading(false, '');
+            return;
+        }
+
+        if (state.wrongAttemptsThisQuestion === 2) {
+            state.markHelpUsed();
+            ui.showHelpContent(state.currentCategory);
+            ui.showFeedback(false, 'Still not quite — here’s a hint. Max credit is now 25%.');
+            ui.setLoading(false, '');
+            return;
+        }
+
+        ui.showCorrectAnswer(state.currentExpectedAnswer);
+        ui.showFeedback(false, 'Type the correct answer to continue. Max credit is now 12.5%.');
+        ui.setLoading(false, '');
     } catch (error) {
         console.error('Answer submission failed:', error);
         ui.setLoading(false, 'Error!');

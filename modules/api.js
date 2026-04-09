@@ -1,12 +1,12 @@
 import { supabase } from './supabase-client.js';
 
 export const api = {
-    async checkAnswer(id, guess, studentId, usedHelp = false) {
+    async checkAnswer(id, guess, studentId, creditMultiplier = 1.0) {
         const { data, error } = await supabase.rpc('check_math_answer', {
             question_id: id,
             user_guess: guess,
             input_student_id: studentId,
-            input_used_help: usedHelp
+            input_credit_multiplier: creditMultiplier
         });
         if (error) { console.error("RPC Error:", error); throw error; }
         return data?.[0] ?? null;
