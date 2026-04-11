@@ -1,18 +1,11 @@
 export const medianRenderer = {
-    render(questionObj) {
-        const nums = questionObj.question.split(',').map(n => n.trim());
+    render(data) {
+        // data.numbers is already an array! No more .split(',')
         return `
-            <div class="median-wrapper">
-                <p class="table-label">Original Data</p>
-                <div class="dataset-table" id="original-dataset">
-                    ${nums.map(n => `<div class="dataset-cell">${n}</div>`).join('')}
-                </div>
-                <div id="sorted-container" style="display: none;">
-                    <p class="table-label">Sorted Data</p>
-                    <div class="dataset-table" id="sorted-dataset"></div>
-                </div>
-                <button id="sort-btn" class="secondary-btn" data-action="sort">Sort Numbers</button>
-            </div>`;
+            <div class="dataset-table">
+                ${data.numbers.map(n => `<div class="dataset-cell">${n}</div>`).join('')}
+            </div>
+        `;
     },
 
     getHelp() {

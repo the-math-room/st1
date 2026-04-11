@@ -372,6 +372,12 @@ input[type="number"] {
     -moz-appearance: textfield;
 }
 
+#question {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
 /* ==========================================================================
    10. RENDERER SPECIFIC: MEDIAN
    ========================================================================== */
@@ -489,4 +495,80 @@ input[type="number"] {
     #answer-input {
         width: 100%;
     }
+}
+
+/* ==========================================================================
+   15. RENDERER SEGMENT ADDITION
+   ========================================================================== */
+
+   /* Segment Addition Specific Styling */
+.segment-problem-container {
+    padding: 20px 0;
+    text-align: center;
+}
+
+.segment-diagram {
+    max-width: 320px;
+    margin: 0 auto 25px;
+    display: flex;
+    flex-direction: column;
+}
+
+.segment-label-row {
+    display: flex;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--secondary);
+    margin-bottom: 5px;
+}
+
+.label-part {
+    text-align: center;
+}
+
+.segment-line-base {
+    display: flex;
+    align-items: center;
+    position: relative;
+    height: 30px;
+}
+
+.line-segment {
+    height: 4px;
+    background: var(--text-main);
+}
+
+.point-marker {
+    width: 10px;
+    height: 10px;
+    background: var(--text-main);
+    border-radius: 50%;
+    position: relative;
+}
+
+.point-marker span {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.segment-total-row {
+    margin-top: 25px;
+    border-top: 2px solid var(--border);
+    position: relative;
+    padding-top: 8px;
+}
+
+.total-value {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.question-prompt {
+    margin-top: 15px;
+    font-size: 1rem;
 }

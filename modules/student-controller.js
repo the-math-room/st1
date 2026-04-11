@@ -74,92 +74,86 @@ export async function submitAnswer() {
     const input = getEl('answer-input');
     const guess = input?.value?.trim();
 
+    // Guard clause: Ensure we have a guess and active task data
     if (!guess || !state.currentTaskId || !state.currentStudent) return;
 
-    if (state.isCorrectionMode) {
-        if (guess === state.currentExpectedAnswer) {
-            ui.setLoading(true, 'Saving...');
+    // 1. Calculate the Credit Multiplier based on your rules:
+    // Start with the penalty from wrong attempts (1.0, 0.5, 0.25, or 0.125)
+    let finalMultiplier = state.maxCreditThisQuestion;
 
-            try {
-                const result = await api.checkAnswer(
-                    state.currentTaskId,
-                    guess,
-                    state.currentStudent.id,
-                    state.maxCreditThisQuestion
-                );
-
-                if (!result) {
-                    ui.setLoading(false, 'Error!');
-                    return;
-                }
-
-                ui.showFeedback(true, 'Corrected — moving on.');
-                await refreshStudentDashboard();
-
-                setTimeout(() => {
-                    startRound();
-                }, 250);
-            } catch (error) {
-                console.error('Correction submission failed:', error);
-                ui.setLoading(false, 'Error!');
-            }
-
-            return;
-        }
-
-        ui.showFeedback(false, 'Type the correct answer to continue.');
-        ui.setLoading(false, '');
-        return;
+    // If they used help at any point, the current credit is halved
+    if (state.usedHelpThisRound) {
+        finalMultiplier *= 0.5;
     }
 
     ui.setLoading(true, 'Checking...');
 
     try {
+        // 2. Call the Database RPC
         const result = await api.checkAnswer(
             state.currentTaskId,
             guess,
             state.currentStudent.id,
-            state.maxCreditThisQuestion
+            finalMultiplier
         );
 
         if (!result) {
-            ui.setLoading(false, 'Error!');
+            ui.setLoading(false, 'Connection Error!');
             return;
         }
 
+        // 3. Handle SUCCESS
         if (result.is_correct) {
-            ui.showFeedback(true, 'Correct! 🎉');
+            const feedbackMsg = state.isCorrectionMode 
+                ? 'Correction accepted. (1/8 credit)' 
+                : 'Correct! 🎉';
+
+            ui.showFeedback(true, feedbackMsg);
+            
+            // Refresh mastery bars on the dashboard
             await refreshStudentDashboard();
 
+            // Short delay so they see the green "Correct" state before the next question
             setTimeout(() => {
                 startRound();
-            }, result.is_correct ? CONFIG.DELAY_CORRECT : CONFIG.DELAY_WRONG);
+            }, 800);
 
             return;
         }
 
+        // 4. Handle FAILURE
+        // If they are in Correction Mode and still getting it wrong, don't change state
+        if (state.isCorrectionMode) {
+            ui.showFeedback(false, 'Type the correct answer to move on.');
+            ui.setLoading(false, '');
+            return;
+        }
+
+        // Standard Failure Path: Update state for the next attempt
         state.registerWrongAttempt();
 
         if (state.wrongAttemptsThisQuestion === 1) {
-            ui.showFeedback(false, 'Not quite — try again. Max credit is now 50%.');
+            // Wrong once: Penalty applied in state, ask again
+            ui.showFeedback(false, 'Not quite—try again. (Max credit: 50%)');
             ui.setLoading(false, '');
-            return;
-        }
-
-        if (state.wrongAttemptsThisQuestion === 2) {
-            state.markHelpUsed();
+        } 
+        else if (state.wrongAttemptsThisQuestion === 2) {
+            // Wrong twice: Force show help/hint
+            state.markHelpUsed(); 
             ui.showHelpContent(state.currentCategory);
-            ui.showFeedback(false, 'Still not quite — here’s a hint. Max credit is now 25%.');
+            ui.showFeedback(false, 'Still not quite. Look at the hint! (Max credit: 25%)');
             ui.setLoading(false, '');
-            return;
+        } 
+        else {
+            // Wrong 3 times: Correction Mode (Show answer)
+            ui.showCorrectAnswer(state.currentExpectedAnswer);
+            ui.showFeedback(false, 'Type the answer shown to continue. (Max credit: 12.5%)');
+            ui.setLoading(false, '');
         }
 
-        ui.showCorrectAnswer(state.currentExpectedAnswer);
-        ui.showFeedback(false, 'Type the correct answer to continue. Max credit is now 12.5%.');
-        ui.setLoading(false, '');
     } catch (error) {
         console.error('Answer submission failed:', error);
-        ui.setLoading(false, 'Error!');
+        ui.setLoading(false, 'Error reaching server.');
     }
 }
 

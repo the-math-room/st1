@@ -1,10 +1,12 @@
 import { defaultRenderer } from './renderers/default.js';
 import { medianRenderer } from './renderers/median.js';
+import { segmentAdditionRenderer } from './renderers/segment-addition.js';
 
 const QuestionRenderers = {
     median: medianRenderer,
     addition: defaultRenderer,
     subtraction: defaultRenderer,
+    segment_addition: segmentAdditionRenderer, // 2. ADD THIS LINE
     default: defaultRenderer
 };
 
@@ -117,21 +119,20 @@ export const ui = {
     },
 
     renderQuestion(questionObj) {
-        this.activeRenderer =
-            QuestionRenderers[questionObj.category] || QuestionRenderers.default;
+        // Select renderer based on category
+        this.activeRenderer = QuestionRenderers[questionObj.category] || QuestionRenderers.default;
 
-        const problemHtml = this.activeRenderer.render(questionObj);
+        // Pass the raw JSON 'data' to the renderer
+        const problemHtml = this.activeRenderer.render(questionObj.data); 
+        
         const questionBox = getEl('question');
-
-        if (!questionBox) return;
-
-        questionBox.innerHTML = `
-            ${problemHtml}
-            <button id="help-btn" class="secondary-btn button-block" type="button">
-                How do I do this?
-            </button>
-            <div id="help-display" class="help-box is-hidden"></div>
-        `;
+        if (questionBox) {
+            questionBox.innerHTML = `
+                ${problemHtml}
+                <button id="help-btn" class="secondary-btn button-block" type="button">How do I do this?</button>
+                <div id="help-display" class="help-box is-hidden"></div>
+            `;
+        }
     },
 
     setCategoryTag(category) {

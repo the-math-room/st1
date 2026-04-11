@@ -28,6 +28,7 @@ export const api = {
 
     async getRandomQuestion(selectedCategories = []) {
         if (!selectedCategories.length) return null;
+        console.log("App is asking for categories:", selectedCategories);
 
         const { data, error } = await supabase.rpc('get_random_question_for_categories', {
             selected_categories: selectedCategories

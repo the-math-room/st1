@@ -1,6 +1,6 @@
 export const defaultRenderer = {
-    render(questionObj) {
-        return `<div>${questionObj.question}</div>`;
+    render(data) {
+        return `<div>${data.text}</div>`;
     },
     getHelp(category) {
         return `<p>Not Applicable</p>`;
